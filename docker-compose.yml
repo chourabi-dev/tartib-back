@@ -1,0 +1,65 @@
+version: "3"
+
+volumes:
+  tartib-db:
+  pgadmin-data:
+  flyway-data:
+
+networks:
+  vpntp:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 174.0.4.0/24
+          gateway: 174.0.4.1
+
+services:
+
+  tartib-db:
+    image: postgres:latest
+    container_name: tartib_db
+    restart: always
+    shm_size: 128mb
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: tartib_db
+    ports:
+      - '6544:5432'
+    volumes:
+      - tartib-db:/var/lib/postgresql/data
+      - type: tmpfs
+        target: /dev/shm
+        tmpfs:
+          size: 134217728 # 128*2^20 bytes = 128Mb
+    networks:
+      vpntp:
+        ipv4_address: 174.0.4.2
+  
+  # pgadmin:
+  #   image: dpage/pgadmin4
+  #   container_name: pgadmin4_container
+  #   restart: always
+  #   ports:
+  #     - "8888:80"
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: manel@yopmail.com
+  #     PGADMIN_DEFAULT_PASSWORD: 123456
+  #   volumes:
+  #     - pgadmin-data:/var/lib/pgadmin
+  #   networks:
+  #     vpntp:
+  #       ipv4_address: 174.0.4.3
+
+  # flyway:
+  #   image: flyway/flyway
+  #   container_name: flyway
+  #   command: -url=jdbc:postgresql://174.0.4.2:5432/tartib_db -user=root -password=root -locations=filesystem:/flyway/sql migrate
+  #   depends_on:
+  #     - tartib-db
+  #   volumes:
+  #     - ./flyway-data:/flyway/sql
+  #   networks:
+  #     vpntp:
+  #       ipv4_address: 174.0.4.4
